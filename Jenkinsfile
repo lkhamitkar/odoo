@@ -22,6 +22,9 @@ pipeline {
         stage('Checkout from SCM'){
             steps {
                 checkout from SCM
+                git branch : 'main',
+                url : 'https://github.com/lkhamitkar/odoo.git',
+                credentialsId: 'github_token'
                 script{ sh 'git --no-pager log -n3 --pretty=oneline'}
             }
         }
