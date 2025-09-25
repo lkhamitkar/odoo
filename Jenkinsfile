@@ -21,7 +21,6 @@ pipeline {
     stages{
         stage('Checkout from SCM'){
             steps {
-                checkout from SCM
                 git branch : env.BRANCH_NAME,
                 url : 'https://github.com/lkhamitkar/odoo.git',
                 credentialsId: 'github_token'
