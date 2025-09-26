@@ -76,14 +76,15 @@ pipeline {
         stage('Build Artifact'){
             steps{
                 script{
-                    def server = Artifactory.server("${ARTIFACTORY_SERVER}")
-                    def uploadSpec = """{
-                        "files": [{
-                            "pattern" : "build/*.tar.gz",
-                            "target" : "${ARTIFACTORY_REPO}/"
-                        }]
-                    }"""
-                    server.upload spec:uploadSpec
+                    echo 'building artifact'
+                    // def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+                    // def uploadSpec = """{
+                    //     "files": [{
+                    //         "pattern" : "build/*.tar.gz",
+                    //         "target" : "${ARTIFACTORY_REPO}/"
+                    //     }]
+                    // }"""
+                    // server.upload spec:uploadSpec
                 }
             }
         }
