@@ -44,7 +44,11 @@ pipeline {
                 not { anyOf { branch 'develop'; branch 'staging'; branch 'main' } }
             }
             steps {
-                githubNotify context: 'CI/CD Pipeline', status: 'PENDING'
+                githubNotify{
+                    context: 'CI/CD Pipeline',
+                    description: 'BUILD PENDING',
+                    status: 'PENDING'
+                }
                 script {
                     if (!env.BRANCH_NAME.startsWith("feature/")) {
                         error("Invalid branch name: ${env.BRANCH_NAME}. Must start with 'feature/'.")
@@ -141,7 +145,11 @@ pipeline {
     }
     post {
         success {
-           githubNotify context: 'CI/CD Pipeline', status: 'SUCCESS', description: 'Build passed!'
+            githubNotify{
+                    context: 'CI/CD Pipeline',
+                    description: 'BUILD SUCCESS',
+                    status: 'SUCCESS'
+                }
             echo "Build succeeded on ${env.BRANCH_NAME}"
         }
         
@@ -149,7 +157,11 @@ pipeline {
         
         
         failure {
-            githubNotify context: 'CI/CD Pipeline', status: 'FAILURE', description: 'Build failed!'
+            githubNotify{
+                    context: 'CI/CD Pipeline',
+                    description: 'BUILD FAILURE',
+                    status: 'FAILURE'
+                }
             echo " Build failed on ${env.BRANCH_NAME}"
         }
     }
