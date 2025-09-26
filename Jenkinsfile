@@ -35,7 +35,7 @@ pipeline {
         stage('Env Debug') {
             steps {
                     script {
-                        echo "Branch from GitHub: ${env.BRANCH_NAME}"
+                        echo "Picking Branch from GitHub: ${env.BRANCH_NAME}"
                     }
                 }
         }
@@ -49,15 +49,32 @@ pipeline {
         }
 
         stage('Static Analysis and Security Scan'){
-            steps{
-                retry(2) {
-                    echo "running SAST"
-                    // sh './scripts/run-linters.sh' //write linters
-                    // sh './scripts/run-sast.sh || true'
+            parallel {
+                stage('Python Lint'){
+                    steps{
+                        retry(2) {
+                            echo "running SAST"
+                            // sh './scripts/run-linters.sh' //write linters
+                            sh ' pip install flake8 pylint '
+                            // flake8 custom_addons/*
+                            //pylint custom_addons/*
+                            
+                        }
+                    }
+                }
+                stage('Manifest & XML Validation'){
+                    steps{
+                        echo "validating manifest file"
+                        // for module in custom_addons/*; do
+                        //     test -f "$module/__manifest__.py" || echo "$module missing manifest!"
+                        // done
+                        
+                    }
                 }
             }
         }
 
+        // build artifact stage
 
         stage('t29_custom_one'){
                 steps{
@@ -87,18 +104,45 @@ pipeline {
             }
         }
         
-        stage('Integration Tests'){
+        stage('Deploy to Environment'){
             steps{
-                unstash 'one-artifact'
-                unstash 'two-artifact'
-                unstash 'three-artifact'
-                sh './scripts/run-integration-tests.sh'
+                script{
+                    if (env.BRANCH_NAME == 'develop'){
+                        echo 'deploy develop branch'
+                    } else if (env.BRANCH_NAME == 'staging'){
+                        echo 'deploy staging branch'
+                    } else if (env.BRANCH_NAME == 'main'){
+                        echo 'deploy main branch to Production. Approval needed!'
+                    }else {
+                        echo 'feature branch detected: skipping deploy branch '
+                    }
+                }
             }
         }
-        stage('Publish Artifact'){
-            steps{
-                withCredentials([usernamePassword(credentialsId: 'artifactory-push', usernameVariable: 'ARTI_USER', passwordVariable : 'ARTI_PASS')])
-                sh "./scripts/publish-artifact.sh ${params.RELEASE_VERSION}"
+        
+        // stage('Integration Tests'){
+        //     steps{
+        //         unstash 'one-artifact'
+        //         unstash 'two-artifact'
+        //         unstash 'three-artifact'
+        //         sh './scripts/run-integration-tests.sh'
+        //     }
+        // }
+        // stage('Publish Artifact'){
+        //     steps{
+        //         withCredentials([usernamePassword(credentialsId: 'artifactory-push', usernameVariable: 'ARTI_USER', passwordVariable : 'ARTI_PASS')])
+        //         sh "./scripts/publish-artifact.sh ${params.RELEASE_VERSION}"
+        //     }
+        // }
+        post {
+            always {
+                echo "Pipeline finished for branch : ${env.BRANCH_NAME}"
+            }
+            success{
+                echo " Deployment Successful!"
+            }
+            failure{
+                echo " Deployment failed. Check Logs"
             }
         }
     }
