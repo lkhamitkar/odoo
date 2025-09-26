@@ -44,10 +44,10 @@ pipeline {
                 not { anyOf { branch 'develop'; branch 'staging'; branch 'main' } }
             }
             steps {
-                githubNotify context: "CI/CD Pipeline", description: "BUILD PENDING", status: "PENDING"
+                githubNotify context: "CI/CD Pipeline", description: "BUILD PENDING", status: "PENDING",  credentialsId: 'github_token'
                 script {
-                    if (!env.BRANCH_NAME.startsWith("feature/")) {
-                        error("Invalid branch name: ${env.BRANCH_NAME}. Must start with 'feature/'.")
+                    if (!env.CHANGE_BRANCH.startsWith("feature/")) {
+                        error("Invalid branch name: ${env.CHANGE_BRANCH}. Must start with 'feature/'.")
                     }
                 }
             }
@@ -129,7 +129,7 @@ pipeline {
             }
         }
         stage('Manual approval'){
-            when {expression { return env.BRANCH_NAME == 'main' && !params.FORCE}}
+            when {expression { return env.CHANGE_TARGET == 'main' && !params.FORCE}}
             steps{
                 timeout(time: 2, unit: 'HOURS'){
                     input message: "Approve production deploy ${params.RELEASE_VERSION}?", submitter: 'name-release'
@@ -141,7 +141,7 @@ pipeline {
     }
     post {
         success {
-            githubNotify context: "CI/CD Pipeline", description: "BUILD SUCCESS", status: "SUCCESS"
+            githubNotify context: "CI/CD Pipeline", description: "BUILD SUCCESS", status: "SUCCESS",  credentialsId: 'github_token'
             echo "Build succeeded on ${env.BRANCH_NAME}"
         }
         
@@ -149,7 +149,7 @@ pipeline {
         
         
         failure {
-            githubNotify context: "CI/CD Pipeline", description: "BUILD FAILURE", status: "FAILURE"
+            githubNotify context: "CI/CD Pipeline", description: "BUILD FAILURE", status: "FAILURE",  credentialsId: 'github_token'
             echo " Build failed on ${env.BRANCH_NAME}"
         }
     }
