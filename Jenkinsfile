@@ -74,9 +74,9 @@ pipeline {
         stage('Build Package'){
             steps{
                 sh '''
-                mkdir -p build
-                tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
-                '''
+                mkdir -p build '''
+                //tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
+                
             }
         }
 
@@ -84,13 +84,13 @@ pipeline {
             steps{
                 script{
                     def server = Artifactory.server("${ARTIFACTORY_SERVER}")
-                    def uploadSpec = """{
-                        "files": [{
-                            "pattern" : "build/*.tar.gz",
-                            "target" : "${ARTIFACTORY_REPO}/"
-                        }]
-                    }"""
-                    server.upload spec:uploadSpec
+                    // def uploadSpec = """{
+                    //     "files": [{
+                    //         "pattern" : "build/*.tar.gz",
+                    //         "target" : "${ARTIFACTORY_REPO}/"
+                    //     }]
+                    // }"""
+                    // server.upload spec:uploadSpec
                 }
             }
         }
