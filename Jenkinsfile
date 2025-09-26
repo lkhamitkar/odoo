@@ -47,9 +47,9 @@ pipeline {
                 script{
                     echo 'checking or validating any language dependency'
                     // write a script to get dependency of modules
+                }
             }
         }
-
         stage('Static Analysis and Security Scan'){
             parallel {
                 stage('Python Lint'){
@@ -133,4 +133,4 @@ pipeline {
             }
         }
     }
-}}
+}
