@@ -17,10 +17,10 @@ pipeline {
         string(name: 'RELEASE_VERSION', defaultValue: '')
     }
 
-    environment{
-        ARTIFACTORY_CRED = credentials('id')
-        // DEV_SSH = credentials('dev-id')
-    }
+    // environment{
+    //     ARTIFACTORY_CRED = credentials('id')
+    //     // DEV_SSH = credentials('dev-id')
+    // }
 
     stages{
         stage('Checkout from SCM'){
