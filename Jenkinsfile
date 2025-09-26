@@ -121,16 +121,5 @@ pipeline {
         }
 
 
-        post{
-            always {
-                echo "Pipeline finished for branch : ${env.BRANCH_NAME}"
-            }
-            success{
-                echo " Deployment Successful!"
-            }
-            failure{
-                echo " Deployment failed. Check Logs"
-            }
-        }
     }
 }
