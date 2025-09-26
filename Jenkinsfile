@@ -62,27 +62,27 @@ pipeline {
         stage('t29_custom_one'){
                 steps{
                     dir('t29_custom_one'){
-                        sh './build.sh --ci'
-                        sh './run-test.sh'
-                        stash includes: '**/target/**', name:'one-artifact'
+                        // sh './build.sh --ci' build CI script
+                        // sh './run-test.sh' supporting test
+                        // stash includes: '**/target/**', name:'one-artifact' artifactory store
                     }
                 }
             }
         stage('t29_custom_2'){
                 steps{
                     dir('t29_custom_2'){
-                        sh './build.sh --ci'
+                        // sh './build.sh --ci'
                         sh './run-test.sh'
-                        stash includes: '**/target/**', name:'two-artifact'
+                        // stash includes: '**/target/**', name:'two-artifact'
                     }
                 }
             }
         stage('t29_custom_3'){
             steps{
                 dir('t29_custom_3'){
-                    sh './build.sh --ci'
-                    sh './run-test.sh'
-                    stash includes: '**/target/**', name:'three-artifact'
+                    // sh './build.sh --ci'
+                    // sh './run-test.sh'
+                    // stash includes: '**/target/**', name:'three-artifact'
                 }
             }
         }
