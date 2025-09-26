@@ -47,7 +47,7 @@ pipeline {
                 githubNotify context: 'CI/CD Pipeline', status: 'PENDING'
                 script {
                     if (!env.BRANCH_NAME.startsWith("feature/")) {
-                        error("❌ Invalid branch name: ${env.BRANCH_NAME}. Must start with 'feature/'.")
+                        error("Invalid branch name: ${env.BRANCH_NAME}. Must start with 'feature/'.")
                     }
                 }
             }
@@ -88,7 +88,7 @@ pipeline {
             steps{
                 sh '''
                 mkdir -p build '''
-                tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
+                // tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
                 
             }
         }
@@ -98,14 +98,14 @@ pipeline {
             steps{
                 script{
                     echo 'building artifact'
-                    def server = Artifactory.server("${ARTIFACTORY_SERVER}")
-                    def uploadSpec = """{
-                        "files": [{
-                            "pattern" : "build/*.tar.gz",
-                            "target" : "${ARTIFACTORY_REPO}/"
-                        }]
-                    }"""
-                    server.upload spec:uploadSpec
+                    // def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+                    // def uploadSpec = """{
+                    //     "files": [{
+                    //         "pattern" : "build/*.tar.gz",
+                    //         "target" : "${ARTIFACTORY_REPO}/"
+                    //     }]
+                    // }"""
+                    // server.upload spec:uploadSpec
                 }
             }
         }
