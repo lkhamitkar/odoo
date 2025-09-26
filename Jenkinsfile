@@ -46,7 +46,7 @@ pipeline {
             steps{
                 script{
                     echo 'checking or validating any language dependency'
-                    // write a script to get dependency of modules
+                    // write a script to get dependency of modules with fields
                 }
             }
         }
