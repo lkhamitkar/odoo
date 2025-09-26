@@ -17,10 +17,12 @@ pipeline {
         string(name: 'RELEASE_VERSION', defaultValue: '')
     }
 
-    // environment{
-    //     ARTIFACTORY_CRED = credentials('id')
-    //     // DEV_SSH = credentials('dev-id')
-    // }
+    environment{
+        ARTIFACTORY_SERVER = 'jfrog-artifactory'
+        ARTIFACTORY_REPO = 'odoo-custom-modules-local'
+        ARTIFACT_VERSION = "${env.BUILD_NUMBER}"
+        MODULES = "t29_custom_one t29_custom_2 t29_custom_3"
+    }
 
     stages{
         stage('Checkout from SCM'){
@@ -44,7 +46,7 @@ pipeline {
             steps{
                 script{
                     echo 'checking or validating any language dependency'
-                }
+                    // write a script to get dependency of modules
             }
         }
 
@@ -65,41 +67,30 @@ pipeline {
                 stage('Manifest & XML Validation'){
                     steps{
                         echo "validating manifest file"
-                        // for module in custom_addons/*; do
-                        //     test -f "$module/__manifest__.py" || echo "$module missing manifest!"
-                        // done
-                        
                     }
                 }
             }
         }
-
-        // build artifact stage
-
-        stage('t29_custom_one'){
-                steps{
-                    dir('t29_custom_one'){
-                        // sh './build.sh --ci' build CI script
-                        // sh './run-test.sh' supporting test
-                        // stash includes: '**/target/**', name:'one-artifact' artifactory store
-                    }
-                }
-            }
-        stage('t29_custom_2'){
-                steps{
-                    dir('t29_custom_2'){
-                        // sh './build.sh --ci'
-                        sh './run-test.sh'
-                        // stash includes: '**/target/**', name:'two-artifact'
-                    }
-                }
-            }
-        stage('t29_custom_3'){
+        stage('Build Package'){
             steps{
-                dir('t29_custom_3'){
-                    // sh './build.sh --ci'
-                    // sh './run-test.sh'
-                    // stash includes: '**/target/**', name:'three-artifact'
+                sh '''
+                mkdir -p build
+                tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
+                '''
+            }
+        }
+
+        stage('Build Artifact'){
+            steps{
+                script{
+                    def server = Artifactory.server("${ARTIFACTORY_SERVER}")
+                    def uploadSpec = """{
+                        "files": [{
+                            "pattern" : "build/*.tar.gz",
+                            "target" : "${ARTIFACTORY_REPO}/"
+                        }]
+                    }"""
+                    server.upload spec:uploadSpec
                 }
             }
         }
@@ -108,6 +99,7 @@ pipeline {
             steps{
                 script{
                     if (env.BRANCH_NAME == 'develop'){
+                        //deploy script , branch, artifact version here
                         echo 'deploy develop branch'
                     } else if (env.BRANCH_NAME == 'staging'){
                         echo 'deploy staging branch'
@@ -119,22 +111,17 @@ pipeline {
                 }
             }
         }
-        
-        // stage('Integration Tests'){
-        //     steps{
-        //         unstash 'one-artifact'
-        //         unstash 'two-artifact'
-        //         unstash 'three-artifact'
-        //         sh './scripts/run-integration-tests.sh'
-        //     }
-        // }
-        // stage('Publish Artifact'){
-        //     steps{
-        //         withCredentials([usernamePassword(credentialsId: 'artifactory-push', usernameVariable: 'ARTI_USER', passwordVariable : 'ARTI_PASS')])
-        //         sh "./scripts/publish-artifact.sh ${params.RELEASE_VERSION}"
-        //     }
-        // }
-        post {
+        stage('Manual approval'){
+            when {expression { return !params.FORCE}}
+            steps{
+                timeout(time: 2, unit: 'HOURS'){
+                    input message: "Approve production deploy ${params.RELEASE_VERSION}?", submitter: 'name-release'
+                }
+            }
+        }
+
+
+    post {
             always {
                 echo "Pipeline finished for branch : ${env.BRANCH_NAME}"
             }
