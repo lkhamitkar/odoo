@@ -32,6 +32,14 @@ pipeline {
             }
         }
 
+        stage('Env Debug') {
+        steps {
+                script {
+                    echo "Branch from GitHub: ${env.BRANCH_NAME}"
+                }
+            }
+        }
+
         stage('Dependency Validation'){
             steps{
                 script{
