@@ -4,7 +4,7 @@ pipeline {
     }
 
     agent{
-        label 'test'
+        label 'dev'
     }
     options {
         timestamps()
@@ -21,7 +21,7 @@ pipeline {
         ARTIFACTORY_SERVER = 'jfrog-artifactory'
         ARTIFACTORY_REPO = 'odoo-custom-modules-local'
         ARTIFACT_VERSION = "${env.BUILD_NUMBER}"
-        MODULES = "t29_custom_one t29_custom_2 t29_custom_3"
+        MODULES = "t29_custom_one t29_custom_2 t29_custom_3" // import the modules
     }
 
     stages{
@@ -30,16 +30,9 @@ pipeline {
                 checkout scm
                 script {
                     sh 'git --no-pager log -n3 --pretty=oneline'
+                    echo "Picking Branch from GitHub: ${env.BRANCH_NAME}"
                 }
             }
-        }
-
-        stage('Env Debug') {
-            steps {
-                    script {
-                        echo "Picking Branch from GitHub: ${env.BRANCH_NAME}"
-                    }
-                }
         }
 
         stage('Dependency Validation'){
@@ -58,8 +51,7 @@ pipeline {
                             echo "running SAST"
                             // sh './scripts/run-linters.sh' //write linters
                             sh ' pip install flake8 pylint '
-                            // flake8 custom_addons/*
-                            //pylint custom_addons/*
+                            // install plugins and run linters.
                             
                         }
                     }
@@ -67,6 +59,7 @@ pipeline {
                 stage('Manifest & XML Validation'){
                     steps{
                         echo "validating manifest file"
+                        // validate the XML or perform pre-build steps
                     }
                 }
             }
@@ -84,13 +77,13 @@ pipeline {
             steps{
                 script{
                     def server = Artifactory.server("${ARTIFACTORY_SERVER}")
-                    // def uploadSpec = """{
-                    //     "files": [{
-                    //         "pattern" : "build/*.tar.gz",
-                    //         "target" : "${ARTIFACTORY_REPO}/"
-                    //     }]
-                    // }"""
-                    // server.upload spec:uploadSpec
+                    def uploadSpec = """{
+                        "files": [{
+                            "pattern" : "build/*.tar.gz",
+                            "target" : "${ARTIFACTORY_REPO}/"
+                        }]
+                    }"""
+                    server.upload spec:uploadSpec
                 }
             }
         }
