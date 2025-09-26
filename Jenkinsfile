@@ -45,9 +45,9 @@ pipeline {
             }
             steps {
                 githubNotify{
-                    context: 'CI/CD Pipeline',
-                    description: 'BUILD PENDING',
-                    status: 'PENDING'
+                    context: "CI/CD Pipeline",
+                    description: "BUILD PENDING",
+                    status: "PENDING"
                 }
                 script {
                     if (!env.BRANCH_NAME.startsWith("feature/")) {
@@ -146,9 +146,9 @@ pipeline {
     post {
         success {
             githubNotify{
-                    context: 'CI/CD Pipeline',
-                    description: 'BUILD SUCCESS',
-                    status: 'SUCCESS'
+                    context: "CI/CD Pipeline",
+                    description: "BUILD SUCCESS",
+                    status: "SUCCESS"
                 }
             echo "Build succeeded on ${env.BRANCH_NAME}"
         }
@@ -158,9 +158,9 @@ pipeline {
         
         failure {
             githubNotify{
-                    context: 'CI/CD Pipeline',
-                    description: 'BUILD FAILURE',
-                    status: 'FAILURE'
+                    context: "CI/CD Pipeline",
+                    description: "BUILD FAILURE",
+                    status: "FAILURE"
                 }
             echo " Build failed on ${env.BRANCH_NAME}"
         }
