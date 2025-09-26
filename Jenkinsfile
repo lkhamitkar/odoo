@@ -1,4 +1,8 @@
 pipeline {
+    triggers {
+        githubPush()
+    }
+
     agent{
         label 'test'
     }
