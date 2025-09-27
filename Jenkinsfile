@@ -28,30 +28,56 @@ pipeline {
         stage('Checkout from SCM'){
             steps {
                 checkout scm
+                
                 script {
+                    // configured via webhook as checkout from scm doesnt give any control.
                     sh 'git --no-pager log -n3 --pretty=oneline'
+                    // webhook doesnt work with localhost hence used ngrok- create public API for localhost
                     echo "Picking Branch from GitHub: ${env.BRANCH_NAME}"
                 }
             }
         }
 
-        stage('Dependency Validation'){
-            steps{
-                script{
-                    echo 'checking or validating any language dependency'
-                    // write a script to get dependency of modules with fields
+        //developers are forced to create feature/* branches 
+        stage('Validate Branch Rules') {
+            when {
+                not {
+                    anyOf {
+                        allOf {
+                            expression { env.CHANGE_TARGET == 'develop' && env.CHANGE_BRANCH?.startsWith('feature/') }
+                        }
+                        allOf {
+                            expression { env.CHANGE_TARGET == 'staging' && env.CHANGE_BRANCH == 'develop' }
+                        }
+                        allOf {
+                            expression { env.CHANGE_TARGET == 'main' && env.CHANGE_BRANCH == 'staging' }
+                        }
+                        allOf {
+                            expression { env.CHANGE_TARGET == 'main' && env.CHANGE_BRANCH?.startsWith('hotfix/') }
+                        }
+                    }
+                }
+            }
+            steps {
+                script {
+                    error("Invalid PR flow detected: ${env.CHANGE_BRANCH} → ${env.CHANGE_TARGET}")
                 }
             }
         }
+    
         stage('Static Analysis and Security Scan'){
+            when {
+                anyOf {
+                    expression { env.CHANGE_TARGET == 'develop' }
+                    expression { env.CHANGE_BRANCH?.startsWith('hotfix/') }
+                }
+            }
             parallel {
-                stage('Python Lint'){
+                stage('Python Linting'){
                     steps{
                         retry(2) {
                             echo "running SAST"
-                            // sh './scripts/run-linters.sh' //write linters
-                            sh ' pip install flake8 pylint '
-                            // install plugins and run linters.
+                            // run script for linters such as Pylint or code check Black
                             
                         }
                     }
@@ -64,56 +90,57 @@ pipeline {
                 }
             }
         }
-        stage('Build Package'){
-            steps{
-                sh '''
-                mkdir -p build '''
-                //tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
-                
+
+
+        stage('Run only for PRs targeting develop') {
+            when {
+                expression { env.CHANGE_TARGET == 'develop' }
+            }
+            steps {
+                echo "This stage runs only when the PR target branch is 'develop'"
+                //Write test Scripts
             }
         }
 
-        stage('Build Artifact'){
-            steps{
-                script{
-                    echo 'building artifact'
-                    // def server = Artifactory.server("${ARTIFACTORY_SERVER}")
-                    // def uploadSpec = """{
-                    //     "files": [{
-                    //         "pattern" : "build/*.tar.gz",
-                    //         "target" : "${ARTIFACTORY_REPO}/"
-                    //     }]
-                    // }"""
-                    // server.upload spec:uploadSpec
-                }
+        stage('Run only for PRs targeting staging') {
+            when {
+                expression { env.CHANGE_TARGET == 'staging' }
+            }
+            steps {
+                echo "This stage runs only when the PR target branch is 'develop'"
+                //Write test Scripts
             }
         }
-        
-        stage('Deploy to Environment'){
-            steps{
-                script{
-                    if (env.BRANCH_NAME == 'develop'){
-                        //deploy script , branch, artifact version here
-                        echo 'deploy develop branch'
-                    } else if (env.BRANCH_NAME == 'staging'){
-                        echo 'deploy staging branch'
-                    } else if (env.BRANCH_NAME == 'main'){
-                        echo 'deploy main branch to Production. Approval needed!'
-                    }else {
-                        echo 'feature branch detected: skipping deploy branch '
-                    }
-                }
+
+        stage('Run only for PRs targeting main') {
+            when {
+                expression { env.CHANGE_TARGET == 'main' }
+            }
+            steps {
+                echo "This stage runs only when the PR target branch is 'develop'"
+                //Write test Scripts
             }
         }
+
         stage('Manual approval'){
-            when {expression { return !params.FORCE}}
+            when {expression { return env.CHANGE_TARGET == 'main' && !params.FORCE}}
             steps{
                 timeout(time: 2, unit: 'HOURS'){
                     input message: "Approve production deploy ${params.RELEASE_VERSION}?", submitter: 'name-release'
                 }
             }
         }
-
-
     }
+    post {
+        success {
+            githubNotify context: "CI/CD Pipeline", description: "BUILD SUCCESS", status: "SUCCESS",  credentialsId: 'github_token'
+            echo "Build succeeded on ${env.BRANCH_NAME}"
+        }
+        
+        failure {
+            githubNotify context: "CI/CD Pipeline", description: "BUILD FAILURE", status: "FAILURE",  credentialsId: 'github_token'
+            echo " Build failed on ${env.BRANCH_NAME}"
+        }
+    }
+
 }
