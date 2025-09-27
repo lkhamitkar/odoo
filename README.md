@@ -4,7 +4,7 @@ This repository uses a Jenkins Declarative Pipeline integrated with GitHub Webho
 The pipeline enforces branching rules, PR validation, and multi-stage quality gates to ensure code quality and controlled releases.
 
 🔧 Pipeline Configuration
-General Settings
+General Setting
 
 Trigger: githubPush()
 
