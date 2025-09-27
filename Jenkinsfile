@@ -28,14 +28,32 @@ pipeline {
         stage('Checkout from SCM'){
             steps {
                 checkout scm
+                
                 script {
+                    // configured via webhook as checkout from scm doesnt give any control.
                     sh 'git --no-pager log -n3 --pretty=oneline'
+                    // webhook doesnt work with localhost hence used ngrok- create public API for localhost
                     echo "Picking Branch from GitHub: ${env.BRANCH_NAME}"
                 }
             }
         }
 
-        stage('Dependency Validation'){
+        //developers are forced to create feature/* branches 
+        stage('Validate Branch Name') {
+            when {
+                not { anyOf { branch 'develop'; branch 'staging'; branch 'main' } }
+            }
+            steps {
+                githubNotify context: "CI/CD Pipeline", description: "BUILD PENDING", status: "PENDING",  credentialsId: 'github_token'
+                script {
+                    if (!env.CHANGE_BRANCH.startsWith("feature/")) {
+                        error("Invalid branch name: ${env.CHANGE_BRANCH}. Must start with 'feature/'.")
+                    }
+                }
+            }
+        }
+        stage('Build and Dependency Validation'){
+            when { branch 'develop' }
             steps{
                 script{
                     echo 'checking or validating any language dependency'
@@ -44,12 +62,13 @@ pipeline {
             }
         }
         stage('Static Analysis and Security Scan'){
+            when { branch 'develop' }
             parallel {
                 stage('Python Lint'){
                     steps{
                         retry(2) {
                             echo "running SAST"
-                            // sh './scripts/run-linters.sh' //write linters
+                            sh './scripts/run-linters.sh' //write linters
                             sh ' pip install flake8 pylint '
                             // install plugins and run linters.
                             
@@ -65,15 +84,17 @@ pipeline {
             }
         }
         stage('Build Package'){
+            when { branch 'develop' }
             steps{
                 sh '''
                 mkdir -p build '''
-                //tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
+                // tar -czf build/custom_modules-${ARTIFACT_VERSION}.tar.gz $MODULES
                 
             }
         }
 
         stage('Build Artifact'){
+            when { branch 'develop' }
             steps{
                 script{
                     echo 'building artifact'
@@ -92,12 +113,14 @@ pipeline {
         stage('Deploy to Environment'){
             steps{
                 script{
-                    if (env.BRANCH_NAME == 'develop'){
+                    def targetBranch = env.CHANGE_TARGET
+                    echo "Target Branch : ${targetBranch}"
+                    if (targetBranch == 'develop'){
                         //deploy script , branch, artifact version here
                         echo 'deploy develop branch'
-                    } else if (env.BRANCH_NAME == 'staging'){
+                    } else if (targetBranch == 'staging'){
                         echo 'deploy staging branch'
-                    } else if (env.BRANCH_NAME == 'main'){
+                    } else if (targetBranch == 'main'){
                         echo 'deploy main branch to Production. Approval needed!'
                     }else {
                         echo 'feature branch detected: skipping deploy branch '
@@ -106,7 +129,7 @@ pipeline {
             }
         }
         stage('Manual approval'){
-            when {expression { return !params.FORCE}}
+            when {expression { return env.CHANGE_TARGET == 'main' && !params.FORCE}}
             steps{
                 timeout(time: 2, unit: 'HOURS'){
                     input message: "Approve production deploy ${params.RELEASE_VERSION}?", submitter: 'name-release'
@@ -116,4 +139,19 @@ pipeline {
 
 
     }
+    post {
+        success {
+            githubNotify context: "CI/CD Pipeline", description: "BUILD SUCCESS", status: "SUCCESS",  credentialsId: 'github_token'
+            echo "Build succeeded on ${env.BRANCH_NAME}"
+        }
+        
+            
+        
+        
+        failure {
+            githubNotify context: "CI/CD Pipeline", description: "BUILD FAILURE", status: "FAILURE",  credentialsId: 'github_token'
+            echo " Build failed on ${env.BRANCH_NAME}"
+        }
+    }
+
 }
