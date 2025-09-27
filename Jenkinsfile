@@ -1,8 +1,4 @@
 pipeline {
-    triggers {
-        githubPush()
-    }
-
     agent{
         label 'dev'
     }
@@ -41,6 +37,8 @@ pipeline {
         //developers are forced to create feature/* branches 
         stage('Validate Branch Rules') {
             when {
+                // this can be written in script. As currently it will skip the stage which sometimes is unclear.
+                // currently skipping stage is a passing condition
                 not {
                     anyOf {
                         allOf {
